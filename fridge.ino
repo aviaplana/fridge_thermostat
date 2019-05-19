@@ -3,6 +3,7 @@
 #include "fridge_mqtt.h"
 #include "fridge_wifi.h"
 #include "fridge_sensors.h"
+#include "fridge_encoder.h"
 
 #define POTENTIOMETER A0
 #define RELAY_PIN 13
@@ -22,6 +23,7 @@ Wifi wifi;
 Mqtt mqtt;
 FridgeData data;
 Sensors sensors;
+Encoder encoder(D2, D3);
 
 unsigned long last_millis_reconnect = 0;
 unsigned long last_millis_publish = 0;
@@ -29,11 +31,12 @@ unsigned long last_millis_check_fridge = 0;
 
 void setup() {
   Serial.begin(9600);
+  encoder.begin();
 
   set_pins();
+  set_interrupt();
   connect_wifi_and_mqtt();
   
-
   while(!sensors.initialize()) {
     Serial.println("Unable to initialize sensors!");
     delay(1000);
@@ -45,6 +48,15 @@ void setup() {
 void set_pins() {
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
+}
+
+void set_interrupt() {
+    int interruption_num = encoder.getInterruptNumber();
+    attachInterrupt(interruption_num, manage_encoder_interruption, RISING);  
+}
+
+void manage_encoder_interruption() {
+  encoder.manageInterrupt();
 }
 
 bool connect_wifi() {
