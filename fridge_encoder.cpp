@@ -15,6 +15,12 @@ uint8_t Encoder::getInterruptNumber() {
     return digitalPinToInterrupt(CLK_PIN);
 }
 
+bool Encoder::hasNewInteraction() {
+    bool hasInteraction = interruption_flag;
+    interruption_flag = false;
+    return hasInteraction;
+}
+
 void Encoder::manageInterrupt() {
     if (!interruption_flag) {
         if (digitalRead(CLK_PIN) && !digitalRead(DT_PIN)) {

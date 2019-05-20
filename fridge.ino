@@ -5,12 +5,9 @@
 #include "fridge_sensors.h"
 #include "fridge_encoder.h"
 
-#define POTENTIOMETER A0
 #define RELAY_PIN 13
 
 #define TEMPERATURE_TOLERANCE .5
-#define MIN_POT 77
-#define MAX_POT 952
 #define MIN_TEMP 0
 #define MAX_TEMP 100
 #define RECONNECT_TIME 5000
@@ -64,21 +61,6 @@ bool connect_wifi() {
    strcpy(params.ssid, "ap_chaos");
    strcpy(params.password, "LaPutaClau_7");
    return wifi.connect(params);
-}
-
-float read_goal_temperature() {
-  int samples = 15;
-  int temp_pod = 0;
-
-  for (int i = 0; i < samples; i++) {    
-    temp_pod += analogRead(POTENTIOMETER);
-    delay(70);
-  }
-  
-  temp_pod /= samples;
-  float goal = map(temp_pod, MIN_POT, MAX_POT, MAX_TEMP, MIN_TEMP) / 10.;
-
-  return goal;
 }
 
 void set_fridge_data() {
@@ -196,9 +178,6 @@ bool check_interval_passed() {
 }
 
 void read_sensors_and_operate_compressor() {
-    float goal = read_goal_temperature();
-    data.goal_temperature = goal;
-
     set_fridge_data();
     
     if (data.hasValidData()) {    
@@ -215,7 +194,20 @@ void reconnect_if_required() {
     }
 }
 
+void adjust_goal_temperature() {
+  Encoder::Direction direction = encoder.getInteractionDirection();
+  if (direction == Encoder::RIGHT) {
+    data.goal_temperature += 0.1;
+  } else if (direction == Encoder::LEFT){
+    data.goal_temperature -= 0.1;
+  }
+}
+
 void loop() {
+  if (encoder.hasNewInteraction()) {
+    adjust_goal_temperature();
+  }
+
   if (check_interval_passed()) {
     read_sensors_and_operate_compressor();
     last_millis_check_fridge = millis();
