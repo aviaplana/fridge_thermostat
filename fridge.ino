@@ -8,25 +8,27 @@
 
 #define RELAY_PIN 13
 
+#define TEMPERATURE_ALARM_DEGREES_OVER 10
 #define TEMPERATURE_TOLERANCE .5
 #define MIN_TEMP 0
 #define MAX_TEMP 100
 #define RECONNECT_TIME 5000
 #define PUBLISH_FREQUENCY 10000
 #define CHECK_FRIDGE_FREQUENCY 5000
-
-#define mqtt_topic "fridge/status"
+#define GOAL_SET_DISPLAY_TIME 2000
+#define DISPLAY_I2C_ADDRESS 0x3C
 
 Wifi wifi;
 Mqtt mqtt;
 FridgeData data;
 Sensors sensors;
-Display display(128, 64);
-Encoder encoder(D2, D3);
+Display display;
+Encoder encoder(D3, D4);
 
 unsigned long last_millis_reconnect = 0;
 unsigned long last_millis_publish = 0;
 unsigned long last_millis_check_fridge = 0;
+unsigned long last_millis_goal_set = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -108,7 +110,7 @@ void send_data_mqtt() {
     
   char* message = data.toString();
 
-  mqtt.sendMessage(mqtt_topic, message);
+  mqtt.sendMessage(MQTT_TOPIC, message);
                                 
   last_millis_publish = millis();
   
@@ -137,7 +139,8 @@ bool connect_mqtt() {
   Serial.print(F("... "));
 
   bool success = mqtt.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD);
-
+  data.is_connected = success;
+  
   if (success) {
     Serial.println(F("Connected successfully!"));
   } else {
@@ -163,6 +166,8 @@ void connect_wifi_and_mqtt() {
       }
 
       last_millis_reconnect = millis();
+    } else {
+      data.is_connected = false;
     }
   }
 }
@@ -180,12 +185,17 @@ bool check_interval_passed() {
   return (millis() - last_millis_check_fridge) > CHECK_FRIDGE_FREQUENCY;
 }
 
+bool is_set_goal_display_time_over() {
+  return (millis() - last_millis_goal_set) > GOAL_SET_DISPLAY_TIME;
+}
+
 void read_sensors_and_operate_compressor() {
     set_fridge_data();
     
     if (data.hasValidData()) {    
       set_compressor_if_required();
       print_fridge_data();
+      data.is_over_temperature = is_over_temperature();
     } else {
       Serial.println(F("Failed to read from sensor"));
     }
@@ -204,6 +214,17 @@ void adjust_goal_temperature() {
   } else if (direction == Encoder::LEFT){
     data.goal_temperature -= 0.1;
   }
+  last_millis_goal_set = millis();
+}
+
+void update_main_screen() {
+  if (is_set_goal_display_time_over()) {
+    display.printMainScreen(data);
+  }
+}
+
+bool is_over_temperature() {
+  return data.hasValidData() && data.temperature >= (TEMPERATURE_ALARM_DEGREES_OVER + data.goal_temperature);
 }
 
 void loop() {
@@ -213,10 +234,14 @@ void loop() {
     display.printGoalFullScreen(goal);
   }
 
+  if (display.getCurrentScreen() == SET_GOAL_SCREEN) {
+    update_main_screen();
+  }
+
   if (check_interval_passed()) {
     read_sensors_and_operate_compressor();
     last_millis_check_fridge = millis();
-    display.printFridgeData(data);
+    update_main_screen();
   }
 
   if (can_send_data()) {
@@ -224,5 +249,5 @@ void loop() {
     send_data_mqtt();    
   }
   
-  delay(500);
+  delay(100);
 }

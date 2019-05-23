@@ -3,14 +3,20 @@
 #include "fridge_data.h"
 #include <Adafruit_SSD1306.h>
 
+enum Screen {
+    SET_GOAL_SCREEN, MAIN_SCREEN
+};
+
 class Display {
-        Adafruit_SSD1306 display;
+    Screen current_screen;
+    Adafruit_SSD1306* display = new Adafruit_SSD1306(128, 64);
         
     public:
-        Display(uint16_t, uint16_t);
+        Display();
         void begin(uint16_t);
-        void printFridgeData(FridgeData);
-        void printGoalFullScreen(const char*) {
+        void printMainScreen(FridgeData);
+        void printGoalFullScreen(const char*);
+        Screen getCurrentScreen() { return current_screen; }
 
     private:
         void drawSeparations();
