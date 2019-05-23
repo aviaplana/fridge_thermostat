@@ -9,7 +9,7 @@ class Encoder {
         };
 
         Encoder(uint8_t pin_clk, uint8_t pin_dt);
-        bool hasNewInteraction() { return interruption_flag; }
+        bool hasNewInteraction();
         Direction getInteractionDirection() { return interaction_direction; };
         void manageInterrupt();
         void begin();

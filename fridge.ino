@@ -4,6 +4,7 @@
 #include "fridge_wifi.h"
 #include "fridge_sensors.h"
 #include "fridge_encoder.h"
+#include "fridge_display.h"
 
 #define RELAY_PIN 13
 
@@ -20,6 +21,7 @@ Wifi wifi;
 Mqtt mqtt;
 FridgeData data;
 Sensors sensors;
+Display display(128, 64);
 Encoder encoder(D2, D3);
 
 unsigned long last_millis_reconnect = 0;
@@ -29,6 +31,7 @@ unsigned long last_millis_check_fridge = 0;
 void setup() {
   Serial.begin(9600);
   encoder.begin();
+  display.begin(DISPLAY_I2C_ADDRESS);
 
   set_pins();
   set_interrupt();
@@ -206,11 +209,14 @@ void adjust_goal_temperature() {
 void loop() {
   if (encoder.hasNewInteraction()) {
     adjust_goal_temperature();
+    const char* goal = data.stringGoalTemperature();
+    display.printGoalFullScreen(goal);
   }
 
   if (check_interval_passed()) {
     read_sensors_and_operate_compressor();
     last_millis_check_fridge = millis();
+    display.printFridgeData(data);
   }
 
   if (can_send_data()) {
