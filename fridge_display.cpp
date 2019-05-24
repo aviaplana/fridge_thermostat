@@ -3,9 +3,6 @@
 #include <SPI.h>
 #include <Wire.h>
 
-Display::Display() {
-}
-
 void Display::begin(uint16_t address) {
     display->begin(SSD1306_SWITCHCAPVCC, address);
     display->clearDisplay();

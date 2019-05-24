@@ -34,17 +34,21 @@ void setup() {
   Serial.begin(9600);
   encoder.begin();
   display.begin(DISPLAY_I2C_ADDRESS);
+  mqtt.setServer(MQTT_HOST, MQTT_PORT);
 
   set_pins();
   set_interrupt();
   connect_wifi_and_mqtt();
-  
+  wait_until_sensors_initialized();
+
+  delay(100);
+}
+
+void wait_until_sensors_initialized() {
   while(!sensors.initialize()) {
     Serial.println("Unable to initialize sensors!");
     delay(1000);
   }
-
-  delay(100);
 }
 
 void set_pins() {
@@ -62,6 +66,7 @@ void manage_encoder_interruption() {
 }
 
 bool connect_wifi() {
+  Serial.print(F("Connecting to Wifi..."));
   struct Wifi::ConnectionParams params;
    strcpy(params.ssid, WIFI_SSID);
    strcpy(params.password, WIFI_PASSWORD);
@@ -144,7 +149,7 @@ bool connect_mqtt() {
   if (success) {
     Serial.println(F("Connected successfully!"));
   } else {
-    Serial.print(F("Couldn't connect to WiFi. RC="));
+    Serial.print(F("Couldn't connect. RC="));
     Serial.print(mqtt.getState());
     Serial.print(F("\n"));
   }
@@ -155,26 +160,28 @@ bool connect_mqtt() {
 bool connect_wifi_and_mqtt() {
     if (!wifi.isConnected()) {
       if (connect_wifi()) {
-        Serial.println(F("Connected to WiFi."));
+        Serial.println(F("Success!"));
       } else {
-        Serial.println(F("Couldn't connect to WiFi."));
+        Serial.println(F("Couldn't connect."));
       }
-    } 
+    }
 
     if (wifi.isConnected()) {
       bool success = connect_mqtt();
+      
       if (!success) {
         Serial.print(F("Trying again in "));
         Serial.print(RECONNECT_TIME / 1000);
         Serial.println(F(" seconds"));
-      }
+      } 
+
       last_millis_reconnect = millis();
-      
       return true;
     } else {
       data.is_connected = false;
     }
-  return false;
+
+    return false;
 }
 
 bool reconnection_interval_passed() {

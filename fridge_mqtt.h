@@ -4,16 +4,15 @@
 #include <PubSubClient.h>
 
 class Mqtt {
+    WiFiClient espClient;
+    PubSubClient* client = new PubSubClient(espClient);
+    
     public:
-        Mqtt();
         void setServer(char*, uint16_t);
         bool connect(char*, char*, char*);
         bool isConnected();
         void sendMessage(char*, char*);
-
-    private:
-        WiFiClient espClient;
-        PubSubClient client;
+        int8_t getState();
 };
 
 #endif

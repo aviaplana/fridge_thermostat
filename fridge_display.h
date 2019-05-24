@@ -12,7 +12,6 @@ class Display {
     Adafruit_SSD1306* display = new Adafruit_SSD1306(128, 64);
         
     public:
-        Display();
         void begin(uint16_t);
         void printMainScreen(FridgeData);
         void printGoalFullScreen(const char*);
