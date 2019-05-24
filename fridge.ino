@@ -63,8 +63,8 @@ void manage_encoder_interruption() {
 
 bool connect_wifi() {
   struct Wifi::ConnectionParams params;
-   strcpy(params.ssid, "ap_chaos");
-   strcpy(params.password, "LaPutaClau_7");
+   strcpy(params.ssid, WIFI_SSID);
+   strcpy(params.password, WIFI_PASSWORD);
    return wifi.connect(params);
 }
 
@@ -144,17 +144,21 @@ bool connect_mqtt() {
   if (success) {
     Serial.println(F("Connected successfully!"));
   } else {
-    Serial.println(F("Couldn't connect."));
+    Serial.print(F("Couldn't connect to WiFi. RC="));
+    Serial.print(mqtt.getState());
+    Serial.print(F("\n"));
   }
 
   return success;
 }
 
-void connect_wifi_and_mqtt() {
-  if (reconnection_interval_passed()) {
-
+bool connect_wifi_and_mqtt() {
     if (!wifi.isConnected()) {
-      connect_wifi();
+      if (connect_wifi()) {
+        Serial.println(F("Connected to WiFi."));
+      } else {
+        Serial.println(F("Couldn't connect to WiFi."));
+      }
     } 
 
     if (wifi.isConnected()) {
@@ -164,16 +168,17 @@ void connect_wifi_and_mqtt() {
         Serial.print(RECONNECT_TIME / 1000);
         Serial.println(F(" seconds"));
       }
-
       last_millis_reconnect = millis();
+      
+      return true;
     } else {
       data.is_connected = false;
     }
-  }
+  return false;
 }
 
 bool reconnection_interval_passed() {
-  return millis() - last_millis_reconnect > RECONNECT_TIME;
+  return (millis() - last_millis_reconnect) > RECONNECT_TIME;
 }
 
 bool can_send_data() {
@@ -202,7 +207,7 @@ void read_sensors_and_operate_compressor() {
 }
 
 void reconnect_if_required() {
-    if (!mqtt.isConnected()) {
+    if (!mqtt.isConnected() && reconnection_interval_passed()) {
       connect_wifi_and_mqtt();
     }
 }
