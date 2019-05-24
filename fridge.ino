@@ -16,7 +16,6 @@
 #define PUBLISH_FREQUENCY 10000
 #define CHECK_FRIDGE_FREQUENCY 5000
 #define GOAL_SET_DISPLAY_TIME 2000
-#define DISPLAY_I2C_ADDRESS 0x3C
 
 Wifi wifi;
 Mqtt mqtt;
@@ -33,7 +32,7 @@ unsigned long last_millis_goal_set = 0;
 void setup() {
   Serial.begin(9600);
   encoder.begin();
-  display.begin(DISPLAY_I2C_ADDRESS);
+  display.begin();
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
 
   set_pins();
