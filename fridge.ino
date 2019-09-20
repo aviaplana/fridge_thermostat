@@ -16,6 +16,7 @@
 #define PUBLISH_FREQUENCY 10000
 #define CHECK_FRIDGE_FREQUENCY 5000
 #define GOAL_SET_DISPLAY_TIME 2000
+#define DEFAULT_GOAL_TEMPERATURE 7.0f
 
 Wifi wifi;
 Mqtt mqtt;
@@ -34,6 +35,7 @@ void setup() {
   encoder.begin();
   display.begin();
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
+  data.goal_temperature = DEFAULT_GOAL_TEMPERATURE;
 
   set_pins();
   set_interrupt();
@@ -240,9 +242,10 @@ bool is_over_temperature() {
 
 void loop() {
   if (encoder.hasNewInteraction()) {
-    adjust_goal_temperature();
+    /*adjust_goal_temperature();
     const char* goal = data.stringGoalTemperature();
     display.printGoalFullScreen(goal);
+    */
   }
 
   if (display.getCurrentScreen() == SET_GOAL_SCREEN) {

@@ -23,13 +23,22 @@ bool Encoder::hasNewInteraction() {
 
 void Encoder::manageInterrupt() {
     if (!interruption_flag) {
-        if (digitalRead(CLK_PIN) && !digitalRead(DT_PIN)) {
+        interruption_millis = millis();
+        
+        if (!is_first_interruption() && ((millis() - interruption_millis) > 200)) {
             interruption_flag = true;
-            interaction_direction = RIGHT;
-        } else if(digitalRead(CLK_PIN) && digitalRead(DT_PIN)) {
-            interruption_flag = true;
-            interaction_direction = LEFT;
-
+            if (digitalRead(CLK_PIN)) {
+            
+                if(!digitalRead(DT_PIN)) {
+                    interaction_direction = RIGHT;
+                } else {
+                    interaction_direction = LEFT;
+                }
+            }
         }
     }
+}
+
+bool Encoder::is_first_interruption() {
+    return (millis() - interruption_millis) >= MILLIS_NEW_INTERRUPTION;
 }
